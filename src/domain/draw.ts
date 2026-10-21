@@ -1,7 +1,13 @@
+import { randomIndex, shuffle } from "./random";
+import { balanceTeams } from "./balance";
+export { randomIndex } from "./random";
+export type DrawMode = "random" | "balanced";
+
 export interface Player {
   id: string;
   name: string;
   goalkeeper: boolean;
+  stars?: number | null;
 }
 export interface Team {
   name: string;
@@ -10,6 +16,20 @@ export interface Team {
 export interface ParsedPlayers {
   players: Player[];
   errors: string[];
+}
+
+export const playerKey = (name: string) =>
+  name.normalize("NFC").trim().replace(/\s+/g, " ").toLocaleLowerCase("pt-BR");
+
+// Guardar avaliações pelo nome normalizado preserva-as ao reordenar a lista.
+export function retainRatings(
+  ratings: Record<string, number>,
+  parsed: ParsedPlayers,
+): Record<string, number> {
+  const keys = new Set(parsed.players.map((p) => playerKey(p.name)));
+  return Object.fromEntries(
+    Object.entries(ratings).filter(([key]) => keys.has(key)),
+  );
 }
 
 export function parsePlayers(text: string): ParsedPlayers {
@@ -45,12 +65,31 @@ export function validateDraw(
   parsed: ParsedPlayers,
   count: number,
   fixedGoalkeepers = false,
+  mode: DrawMode = "random",
 ): string[] {
   const errors = [...parsed.errors];
   if (!Number.isSafeInteger(count) || count < 2)
     return [...errors, "Informe uma quantidade inteira de pelo menos 2 times."];
   if (!parsed.players.length)
     return [...errors, "Digite os nomes dos jogadores, um por linha."];
+  if (mode === "balanced") {
+    const invalid = parsed.players.filter(
+      (p) =>
+        !(fixedGoalkeepers && p.goalkeeper) &&
+        (p.stars == null ||
+          !Number.isFinite(p.stars) ||
+          p.stars < 0 ||
+          p.stars > 5 ||
+          !Number.isInteger(p.stars * 2)),
+    );
+    if (invalid.length)
+      errors.push(
+        `Avalie todos os participantes do sorteio com 0 a 5 estrelas, em passos de meia estrela. Faltam avaliações válidas para: ${invalid
+          .slice(0, 5)
+          .map((p) => p.name)
+          .join(", ")}${invalid.length > 5 ? "…" : ""}.`,
+      );
+  }
   if (fixedGoalkeepers) {
     const outfieldCount = parsed.players.filter((p) => !p.goalkeeper).length;
     if (outfieldCount < count)
@@ -77,34 +116,24 @@ export function validateDraw(
   return errors;
 }
 
-// Amostragem sem viés de módulo; a função injetável permite testes determinísticos.
-export function randomIndex(maxExclusive: number): number {
-  const range = 2 ** 32;
-  const limit = range - (range % maxExclusive);
-  const buffer = new Uint32Array(1);
-  do {
-    globalThis.crypto.getRandomValues(buffer);
-  } while (buffer[0] >= limit);
-  return buffer[0] % maxExclusive;
-}
-
-function shuffle<T>(values: readonly T[], pick: (max: number) => number): T[] {
-  const result = [...values];
-  for (let i = result.length - 1; i > 0; i--) {
-    const j = pick(i + 1);
-    [result[i], result[j]] = [result[j], result[i]];
-  }
-  return result;
-}
-
 export function drawTeams(
   parsed: ParsedPlayers,
   count: number,
-  options: { fixedGoalkeepers?: boolean; pick?: (max: number) => number } = {},
+  options: {
+    fixedGoalkeepers?: boolean;
+    pick?: (max: number) => number;
+    mode?: DrawMode;
+  } = {},
 ): Team[] {
-  const { fixedGoalkeepers = false, pick = randomIndex } = options;
-  const errors = validateDraw(parsed, count, fixedGoalkeepers);
+  const {
+    fixedGoalkeepers = false,
+    pick = randomIndex,
+    mode = "random",
+  } = options;
+  const errors = validateDraw(parsed, count, fixedGoalkeepers, mode);
   if (errors.length) throw new Error(errors.join("\n"));
+  if (mode === "balanced")
+    return balanceTeams(parsed.players, count, fixedGoalkeepers, pick);
   const keepers = shuffle(
     parsed.players.filter((p) => p.goalkeeper),
     pick,

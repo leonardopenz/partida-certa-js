@@ -1,7 +1,11 @@
 import { useId, type FormEvent } from "react";
-import type { ParsedPlayers } from "../domain/draw";
+import type { ParsedPlayers, DrawMode, Player } from "../domain/draw";
+import { PlayerRatings } from "./PlayerRatings";
 
 interface Props {
+  mode: DrawMode;
+  onMode: (mode: DrawMode) => void;
+  onStars: (player: Player, value: number | null) => void;
   choice: string;
   customCount: string;
   names: string;
@@ -31,6 +35,38 @@ export function DrawForm(props: Props) {
           <p>Escolha os times e reúna a turma.</p>
         </div>
       </div>
+      <fieldset className="draw-modes">
+        <legend>Tipo de sorteio</legend>
+        {[
+          {
+            value: "random" as const,
+            title: "Sorteio aleatório",
+            description: "Distribua sem considerar habilidade.",
+          },
+          {
+            value: "balanced" as const,
+            title: "Sorteio equilibrado",
+            description: "Use estrelas para aproximar a força dos times.",
+          },
+        ].map((option) => (
+          <label
+            className={`draw-mode ${props.mode === option.value ? "selected" : ""}`}
+            key={option.value}
+          >
+            <input
+              type="radio"
+              name="drawMode"
+              value={option.value}
+              checked={props.mode === option.value}
+              onChange={() => props.onMode(option.value)}
+            />
+            <span>
+              <strong>{option.title}</strong>
+              <small>{option.description}</small>
+            </span>
+          </label>
+        ))}
+      </fieldset>
       <fieldset className="team-options">
         <legend>Quantos times vão jogar?</legend>
         {[
@@ -122,6 +158,13 @@ export function DrawForm(props: Props) {
             : "1 goleiro por time"}
         </span>
       </div>
+      {props.mode === "balanced" && (
+        <PlayerRatings
+          players={props.parsed.players}
+          fixedGoalkeepers={props.fixedGoalkeepers}
+          onChange={props.onStars}
+        />
+      )}
       {!!props.errors.length && (
         <div className="validation" role="alert">
           <strong>Confira antes de sortear</strong>

@@ -1,14 +1,17 @@
 import { useRef, useState } from "react";
 import { formatTeams, type Team, type Player } from "../domain/draw";
+import { averageStars } from "../domain/balance";
 
 export function TeamResults({
   teams,
   onRedraw,
   fixedGoalkeepers,
+  balanced = false,
 }: {
   teams: Team[];
   onRedraw: () => void;
   fixedGoalkeepers?: Player[];
+  balanced?: boolean;
 }) {
   const [copied, setCopied] = useState(false);
   const [manual, setManual] = useState(false);
@@ -43,6 +46,23 @@ export function TeamResults({
           {fixedGoalkeepers ? "jogadores de linha" : "jogadores"}
         </span>
       </div>
+      {balanced && (
+        <div className="balance-summary">
+          <strong>Sorteio equilibrado</strong>
+          <p>
+            Diferença entre as médias:{" "}
+            {(
+              Math.max(...teams.map(averageStars)) -
+              Math.min(...teams.map(averageStars))
+            ).toLocaleString("pt-BR", { maximumFractionDigits: 2 })}{" "}
+            estrela(s). O equilíbrio depende das avaliações; um jogador a mais
+            também pode fazer diferença.
+          </p>
+          <p>
+            As avaliações individuais não são incluídas no texto para WhatsApp.
+          </p>
+        </div>
+      )}
       {fixedGoalkeepers && (
         <section
           className="fixed-keepers"
@@ -78,6 +98,15 @@ export function TeamResults({
                   {team.players.length}{" "}
                   {fixedGoalkeepers ? "jogadores de linha" : "jogadores"}
                 </p>
+                {balanced && (
+                  <p className="team-average">
+                    ★ Média{" "}
+                    {averageStars(team).toLocaleString("pt-BR", {
+                      maximumFractionDigits: 2,
+                    })}{" "}
+                    de 5 estrelas
+                  </p>
+                )}
               </div>
             </div>
             <ul>
