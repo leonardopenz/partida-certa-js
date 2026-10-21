@@ -6,6 +6,9 @@ import {
   parsePlayers,
   validateDraw,
   type Team,
+  type DrawMode,
+  playerKey,
+  retainRatings,
 } from "./domain/draw";
 
 export default function App() {
@@ -13,18 +16,31 @@ export default function App() {
   const [customCount, setCustomCount] = useState("4");
   const [names, setNames] = useState("");
   const [fixedGoalkeepers, setFixedGoalkeepers] = useState(false);
+  const [mode, setMode] = useState<DrawMode>("random");
+  const [ratings, setRatings] = useState<Record<string, number>>({});
   const [errors, setErrors] = useState<string[]>([]);
   const [teams, setTeams] = useState<Team[] | null>(null);
   const [drawId, setDrawId] = useState(0);
   const resultsRef = useRef<HTMLDivElement>(null);
-  const parsed = useMemo(() => parsePlayers(names), [names]);
+  const parsed = useMemo(() => {
+    const result = parsePlayers(names);
+    return {
+      ...result,
+      players: result.players.map((player) => ({
+        ...player,
+        stars: Object.hasOwn(ratings, playerKey(player.name))
+          ? ratings[playerKey(player.name)]
+          : null,
+      })),
+    };
+  }, [names, ratings]);
   const count = choice === "more" ? Number(customCount) : Number(choice);
   function invalidate() {
     setTeams(null);
     setErrors([]);
   }
   function draw() {
-    const issues = validateDraw(parsed, count, fixedGoalkeepers);
+    const issues = validateDraw(parsed, count, fixedGoalkeepers, mode);
     if (choice === "more" && (!Number.isSafeInteger(count) || count < 4))
       issues.unshift(
         "Na opção de mais times, informe uma quantidade inteira de pelo menos 4.",
@@ -34,7 +50,7 @@ export default function App() {
       setTeams(null);
       return;
     }
-    setTeams(drawTeams(parsed, count, { fixedGoalkeepers }));
+    setTeams(drawTeams(parsed, count, { fixedGoalkeepers, mode }));
     setDrawId((id) => id + 1);
     requestAnimationFrame(() =>
       resultsRef.current?.scrollIntoView?.({
@@ -80,6 +96,21 @@ export default function App() {
         </section>
         <div className="setup-layout">
           <DrawForm
+            mode={mode}
+            onMode={(value) => {
+              invalidate();
+              setMode(value);
+            }}
+            onStars={(player, value) => {
+              invalidate();
+              setRatings((previous) => {
+                if (value != null)
+                  return { ...previous, [playerKey(player.name)]: value };
+                const next = { ...previous };
+                delete next[playerKey(player.name)];
+                return next;
+              });
+            }}
             choice={choice}
             customCount={customCount}
             names={names}
@@ -100,6 +131,9 @@ export default function App() {
             }}
             onNames={(value) => {
               invalidate();
+              setRatings((previous) =>
+                retainRatings(previous, parsePlayers(value)),
+              );
               setNames(value);
             }}
             onSubmit={draw}
@@ -127,8 +161,16 @@ export default function App() {
               <li>
                 <span>02</span>
                 <div>
-                  <strong>Liste a galera</strong>
-                  <p>Um nome por linha. Use (GK) para os goleiros.</p>
+                  <strong>
+                    {mode === "balanced"
+                      ? "Liste e avalie a galera"
+                      : "Liste a galera"}
+                  </strong>
+                  <p>
+                    {mode === "balanced"
+                      ? "Informe os nomes e atribua de 0 a 5 estrelas a cada participante."
+                      : "Um nome por linha. Use (GK) para os goleiros."}
+                  </p>
                 </div>
               </li>
               <li>
@@ -156,6 +198,7 @@ export default function App() {
             <TeamResults
               key={drawId}
               teams={teams}
+              balanced={mode === "balanced"}
               onRedraw={draw}
               fixedGoalkeepers={
                 fixedGoalkeepers

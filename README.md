@@ -1,6 +1,6 @@
 # ⚽ Partida Certa — Sorteador de times
 
-Uma página pública para dividir sua turma em times de futebol, com **um goleiro por time ou goleiros fixos fora do sorteio**, e copiar a escalação para o WhatsApp. Sem cadastro, backend ou banco de dados.
+Uma página pública para dividir sua turma em times de futebol com **sorteio aleatório ou equilibrado por estrelas**, **um goleiro por time ou goleiros fixos fora do sorteio**, e copiar a escalação para o WhatsApp. Sem cadastro, backend ou banco de dados.
 
 ## Executar
 
@@ -19,6 +19,8 @@ Não é necessário configurar `.env`, `APP_URL`, PostgreSQL, Prisma ou migratio
 
 ## Usar o sorteador
 
+Escolha primeiro o **tipo de sorteio**. O **Sorteio aleatório** mantém a distribuição sem considerar habilidade. O **Sorteio equilibrado** revela a avaliação dos participantes após a lista de nomes.
+
 1. Escolha **2 times**, **3 times** ou **Preciso de mais times**. A última opção revela um campo obrigatório para informar 4 ou mais times.
 2. Digite uma pessoa por linha e identifique cada goleiro com `(GK)` no final do nome:
 
@@ -34,6 +36,20 @@ Rafael
 3. Clique em **Sortear times**.
 4. Use **Sortear novamente** para um novo sorteio com a mesma lista.
 5. Use **Enviar no WhatsApp** para copiar o texto. A página confirma a cópia; abra a conversa desejada e cole. O botão não envia mensagens nem abre conversas automaticamente.
+
+### Sorteio equilibrado e estrelas
+
+Avalie cada participante de **0 a 5 estrelas**, com incrementos de meia estrela. Clique na metade esquerda da estrela para selecionar metade e na direita para uma estrela inteira. Há uma opção explícita de **zero** e um botão para **Limpar** a avaliação. Os controles também são acessíveis por teclado como grupos de opções.
+
+**Sem avaliação não é zero.** O sorteio equilibrado exige uma avaliação válida de todos os jogadores que serão distribuídos. Avalie goleiros pela habilidade na função: quando um goleiro vai para cada time, suas estrelas entram no cálculo. Goleiros fixos não precisam ser avaliados e ficam fora do cálculo.
+
+As avaliações permanecem ao alternar o tipo de sorteio, a quantidade de times, o modo de goleiros e ao reordenar a lista. São associadas ao nome, ignorando maiúsculas e espaços extras. Adicionar ou corrigir o nome de outro participante preserva as demais avaliações. Um nome novo ou renomeado começa sem avaliação; remover um participante apaga a sua avaliação, mesmo se ele for adicionado novamente. Não há identificação de pessoas além dos nomes informados.
+
+O algoritmo tenta diferentes distribuições, organiza níveis altos e baixos e testa trocas entre jogadores da mesma posição para aproximar a **média de estrelas** dos times. Com quantidades iguais isso também equilibra os totais; quando os tamanhos diferem, as médias permitem comparar os times sem exigir somas iguais. Um jogador a mais ainda pode ser uma vantagem. Os tamanhos continuam diferindo em no máximo uma pessoa, e a regra dos goleiros é preservada.
+
+É uma heurística com tentativas e orçamento de comparações limitado, não uma garantia de solução matemática perfeita. O resultado depende das avaliações subjetivas. A ordem de jogadores empatados, goleiros e times com vagas extras varia aleatoriamente. **Sortear novamente** busca outra composição bem equilibrada, mas pode repetir uma formação por acaso ou quando há poucas alternativas boas.
+
+O resultado mostra a média por time e a diferença entre médias. **Nem as avaliações individuais nem as médias são incluídas no texto para WhatsApp.** Apenas os nomes, times e goleiros são copiados.
 
 ### Goleiros fixos e times de linha
 
@@ -55,22 +71,25 @@ Se o navegador negar acesso à área de transferência, o resultado aparece em u
 - No modo normal, cada pessoa aparece uma única vez, com um goleiro por time. No modo de goleiros fixos, apenas os jogadores de linha são distribuídos; goleiros informados aparecem separadamente.
 - A diferença de quantidade entre os times é de no máximo um jogador nos dois modos.
 - Os times que recebem jogadores excedentes também são escolhidos aleatoriamente.
-- A distribuição é equilibrada por quantidade, sem avaliação de habilidade.
+- Os dois modos equilibram a quantidade; somente o sorteio equilibrado considera as estrelas.
 - Uma nova tentativa pode produzir a mesma formação por acaso.
-- Editar os nomes, a quantidade de times ou o modo de goleiros invalida o resultado anterior.
+- Editar nomes, avaliações, quantidade de times, tipo de sorteio ou modo de goleiros invalida o resultado anterior.
 
 Todos os dados ficam somente na memória da página. Recarregar ou fechar a aba apaga a lista e o resultado. A aplicação não envia os nomes ao servidor nem os persiste no navegador.
 
 ## Estrutura
 
-| Caminho                          | Responsabilidade                                                |
-| -------------------------------- | --------------------------------------------------------------- |
-| `src/App.tsx`                    | Estado da página e fluxo de sorteio                             |
-| `src/components/DrawForm.tsx`    | Quantidade de times, lista e mensagens de validação             |
-| `src/components/TeamResults.tsx` | Times apresentados, novo sorteio e cópia com alternativa manual |
-| `src/domain/draw.ts`             | Interpretação, validação, embaralhamento e formatação do texto  |
-| `src/styles.css`                 | Interface responsiva                                            |
-| `tests/`                         | Testes de domínio e interação com a interface                   |
+| Caminho                            | Responsabilidade                                                      |
+| ---------------------------------- | --------------------------------------------------------------------- |
+| `src/App.tsx`                      | Estado da página e fluxo de sorteio                                   |
+| `src/components/DrawForm.tsx`      | Quantidade de times, lista e mensagens de validação                   |
+| `src/components/TeamResults.tsx`   | Times apresentados, novo sorteio e cópia com alternativa manual       |
+| `src/domain/draw.ts`               | Interpretação, validação e formatação do texto                        |
+| `src/domain/balance.ts`            | Distribuição por estrelas e melhoria por trocas com regras de posição |
+| `src/domain/random.ts`             | Embaralhamento e números aleatórios sem viés de módulo                |
+| `src/components/PlayerRatings.tsx` | Avaliação acessível por estrelas e meias estrelas                     |
+| `src/styles.css`                   | Interface responsiva                                                  |
+| `tests/`                           | Testes de domínio e interação com a interface                         |
 
 React + TypeScript + Vite. O sorteio usa Fisher–Yates com números gerados pela Web Crypto API e amostragem sem viés de módulo. As funções de domínio não dependem de React. Não há rotas de API, login ou chamadas ao banco na versão atual.
 

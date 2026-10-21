@@ -19,7 +19,7 @@ Object.defineProperties(globalThis, {
   },
   matchMedia: { value: () => ({ matches: true }), configurable: true },
 });
-const { render, fireEvent, screen, cleanup, waitFor } = await import(
+const { render, fireEvent, screen, cleanup, waitFor, within } = await import(
   "@testing-library/react"
 );
 const { default: App } = await import("../src/App");
@@ -170,4 +170,100 @@ test("modo fixo também permite informar somente a lista dos jogadores de linha"
   draw();
   assert.equal(screen.getAllByRole("article").length, 3);
   assert.equal(screen.queryByRole("alert"), null);
+});
+
+function setStars(name: string, value: string) {
+  const group = screen.getByRole("group", { name: `Nível de ${name}` });
+  fireEvent.click(within(group).getByRole("radio", { name: value }));
+}
+
+test("modo equilibrado exige avaliações, aceita meia estrela e zero, e copia sem divulgá-las", async () => {
+  let copied = "";
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: {
+      writeText: async (text: string) => {
+        copied = text;
+      },
+    },
+  });
+  render(<App />);
+  fireEvent.click(screen.getByLabelText(/Sorteio equilibrado/));
+  fill("João (GK)\nCarlos (GK)\nAna\nPedro");
+  draw();
+  assert.match(screen.getByRole("alert").textContent ?? "", /Avalie todos/);
+  setStars("João", "0 estrelas");
+  setStars("Carlos", "5 estrelas");
+  setStars("Ana", "3,5 estrelas");
+  setStars("Pedro", "1,5 estrelas");
+  assert.ok(screen.getByText("4/4 avaliados"));
+  draw();
+  assert.equal(screen.getAllByRole("article").length, 2);
+  assert.ok(screen.getByText(/Diferença entre as médias/));
+  fireEvent.click(screen.getByRole("button", { name: "Enviar no WhatsApp" }));
+  await waitFor(() => assert.match(copied, /PARTIDA CERTA/));
+  assert.doesNotMatch(copied, /estrela|★|média|3[.,]5/);
+  fireEvent.click(screen.getByRole("button", { name: /Sortear novamente/ }));
+  assert.equal(screen.getAllByRole("article").length, 2);
+  assert.equal(
+    (
+      within(screen.getByRole("group", { name: "Nível de Ana" })).getByRole(
+        "radio",
+        { name: "3,5 estrelas" },
+      ) as HTMLInputElement
+    ).checked,
+    true,
+  );
+});
+
+test("preserva estrelas ao alternar modo e editar outros jogadores, removendo avaliações de excluídos", () => {
+  render(<App />);
+  fireEvent.click(screen.getByLabelText(/Sorteio equilibrado/));
+  fireEvent.click(screen.getByRole("button", { name: /Goleiros fixos/ }));
+  fill("Ana\nPedro\nGoleiro (GK)");
+  assert.equal(screen.queryByRole("group", { name: "Nível de Goleiro" }), null);
+  setStars("Ana", "0 estrelas");
+  setStars("Pedro", "4,5 estrelas");
+  draw();
+  assert.equal(screen.getAllByRole("article").length, 2);
+  fireEvent.click(screen.getByLabelText(/Sorteio aleatório/));
+  assert.equal(
+    screen.queryByRole("heading", { name: "Os times estão prontos." }),
+    null,
+  );
+  fireEvent.click(screen.getByLabelText(/Sorteio equilibrado/));
+  fill("Pedro\nNovo\nANA\nGoleiro (GK)");
+  assert.equal(
+    (
+      within(screen.getByRole("group", { name: "Nível de ANA" })).getByRole(
+        "radio",
+        { name: "0 estrelas" },
+      ) as HTMLInputElement
+    ).checked,
+    true,
+  );
+  assert.equal(
+    (
+      within(screen.getByRole("group", { name: "Nível de Pedro" })).getByRole(
+        "radio",
+        { name: "4,5 estrelas" },
+      ) as HTMLInputElement
+    ).checked,
+    true,
+  );
+  fill("Ana\nGoleiro (GK)");
+  fill("Ana\nPedro\nGoleiro (GK)");
+  assert.ok(
+    within(screen.getByRole("group", { name: "Nível de Pedro" })).getByText(
+      "Sem avaliação",
+    ),
+  );
+  fireEvent.click(
+    screen.getByRole("button", { name: "Limpar avaliação de Ana" }),
+  );
+  assert.ok(
+    within(screen.getByRole("group", { name: "Nível de Ana" })).getByText(
+      "Sem avaliação",
+    ),
+  );
 });
