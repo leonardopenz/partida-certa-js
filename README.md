@@ -1,10 +1,99 @@
-# ⚽ Partida Certa — Sorteador de times
+# ⚽ Partida Certa
 
-Uma página pública para dividir sua turma em times de futebol com **sorteio aleatório ou equilibrado por estrelas**, **um goleiro por time ou goleiros fixos fora do sorteio**, e copiar a escalação para o WhatsApp. Sem cadastro, backend ou banco de dados.
+**Monte os times do seu futebol de forma rápida, com sorteio aleatório ou equilíbrio por nível dos jogadores.**
 
-## Executar
+O Partida Certa é uma aplicação web para quem organiza partidas de futebol amador, society, futsal ou o racha entre amigos. A proposta é simplificar a divisão da turma: informe os participantes, escolha a quantidade de times e compartilhe a escalação com o grupo.
 
-Requisitos: Node.js 24 (ou >=22.12) e npm.
+A aplicação funciona diretamente no navegador, sem cadastro. A interface se adapta ao celular e ao computador.
+
+## O que é possível fazer
+
+- Formar **2, 3 ou mais times**, com quantidade personalizada a partir de 4.
+- Inserir os participantes em uma lista, com **um nome por linha**.
+- Escolher entre **sorteio aleatório** e **sorteio equilibrado por estrelas**.
+- Identificar goleiros com **`(GK)`** após o nome.
+- Distribuir um goleiro por time ou manter **goleiros fixos fora do sorteio**.
+- Refazer o sorteio sem precisar digitar os participantes novamente.
+- Copiar os times em um texto formatado para colar no WhatsApp.
+
+## Tipos de sorteio
+
+| Modo                    | Como funciona                                                                                                             | Quando usar                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| **Sorteio aleatório**   | Distribui os participantes sem considerar habilidade, respeitando a quantidade de jogadores e a configuração de goleiros. | Para dividir a turma rapidamente ou quando não há avaliação dos jogadores.             |
+| **Sorteio equilibrado** | Usa as estrelas atribuídas aos participantes para buscar times com médias de nível próximas.                              | Quando o organizador conhece os jogadores e quer considerar a diferença de habilidade. |
+
+Nos dois modos, cada jogador sorteado aparece uma única vez, e a diferença de quantidade entre os times é de **no máximo uma pessoa**.
+
+### Avaliação por estrelas
+
+No modo equilibrado, cada participante do sorteio recebe uma avaliação de **0 a 5 estrelas**, com opções de meia estrela, como **2,5** ou **3,5 estrelas**.
+
+- Clique na metade esquerda de uma estrela para selecionar meia estrela, ou na metade direita para selecionar a estrela inteira.
+- Use a opção **0** quando essa for a avaliação desejada.
+- Use **Limpar** para retirar uma avaliação.
+- **Sem avaliação é diferente de zero:** todos os jogadores que entram no sorteio equilibrado precisam ser avaliados.
+- Avalie cada participante considerando sua habilidade na função em que joga.
+
+As avaliações são mantidas ao alternar o modo de sorteio, mudar a quantidade de times e reordenar a lista. Elas são associadas ao nome, ignorando maiúsculas e espaços extras. Participantes novos ou renomeados começam sem avaliação; os removidos deixam de ter sua avaliação guardada. Alterar um participante preserva as avaliações dos demais.
+
+### Como o equilíbrio é buscado
+
+A aplicação gera diferentes distribuições e testa trocas entre jogadores de linha ou entre goleiros para aproximar as **médias de estrelas dos times**. As regras de quantidade e posição continuam sendo respeitadas.
+
+Com times do mesmo tamanho, aproximar as médias também aproxima a soma das avaliações. Quando os tamanhos são diferentes, a comparação usa as médias; ainda assim, ter uma pessoa a mais pode representar uma vantagem em campo.
+
+O resultado mostra a média de cada time e a diferença entre as médias. O cálculo é uma aproximação baseada nas avaliações informadas, com um limite de tentativas para manter o uso ágil; não garante uma formação matemática perfeita nem prevê o resultado da partida.
+
+## Configuração de goleiros
+
+| Configuração            | Comportamento                                                                                                                                        |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Um goleiro por time** | A lista precisa conter exatamente tantos goleiros quanto times. Cada equipe recebe um deles. No modo equilibrado, suas estrelas entram no cálculo.   |
+| **Goleiros fixos**      | Apenas os jogadores de linha são distribuídos. Os goleiros informados ficam em uma lista separada, sem entrar no tamanho nem na avaliação dos times. |
+
+A opção **Goleiros fixos** permite, por exemplo, montar **3 times de linha com 2 goleiros fixos** e revezar apenas os jogadores de linha. Nesse modo, informar os nomes dos goleiros é opcional, e eles não precisam de avaliação. É necessário pelo menos um jogador de linha por time.
+
+Quando os goleiros são informados, seus nomes aparecem separadamente no resultado e no texto compartilhado. A aplicação monta os times; o revezamento durante a partida é organizado pelo grupo.
+
+## Como usar
+
+1. Escolha o **tipo de sorteio**.
+2. Selecione a **quantidade de times** e, se necessário, ative **Goleiros fixos**.
+3. Informe os participantes, um por linha. Para identificar goleiros, use `(GK)` ao final do nome:
+
+   ```text
+   João (GK)
+   Leonardo
+   Pedro
+   Carlos (GK)
+   Lucas
+   Rafael
+   ```
+
+4. Se escolheu o modo equilibrado, atribua as estrelas aos participantes.
+5. Clique em **Sortear times** e confira o resultado.
+6. Use **Sortear novamente** para buscar outra formação ou **Enviar no WhatsApp** para copiar os times.
+
+O botão **Enviar no WhatsApp** copia o texto e informa quando a cópia foi concluída. Depois, abra a conversa desejada e cole a escalação. **As estrelas individuais e as médias dos times não são incluídas no texto.**
+
+Se a cópia automática não estiver disponível, a aplicação oferece o texto para seleção e cópia manual. Um novo sorteio pode repetir uma formação por acaso ou quando há poucas combinações adequadas.
+
+### Validações da lista
+
+Linhas vazias e espaços no começo ou no fim dos nomes são ignorados. O marcador de goleiro aceita `(GK)` e `(gk)`, mas deve estar acompanhado de um nome. Nomes repetidos são sinalizados: diferencie as pessoas, por exemplo, com `João A` e `João B`.
+
+Alterar os nomes, avaliações ou configurações invalida o resultado anterior, para que o próximo sorteio considere os dados atualizados.
+
+## Dados e privacidade
+
+Os nomes, as avaliações e os times ficam somente na memória da página. A aplicação não os envia a um servidor nem os salva no armazenamento do navegador.
+
+**Recarregar a página ou fechar a aba apaga a lista, as avaliações e o resultado.** A cópia para a área de transferência acontece somente quando solicitada pelo usuário.
+
+## Executar localmente
+
+Use **Node.js 24**, indicado no arquivo `.nvmrc`, e npm. O requisito declarado pelo projeto é **Node.js 22.12.0 ou superior**.
 
 ```bash
 git clone https://github.com/leonardopenz/partida-certa-js.git
@@ -13,107 +102,93 @@ npm ci
 npm run dev
 ```
 
-Abra **http://127.0.0.1:5173**. O Vite usa uma porta fixa: se 5173 já estiver ocupada, encerre a outra instância ou informe outra porta com `npm run dev -- --port 5174`.
+Abra **http://127.0.0.1:5173** no navegador.
 
-Não é necessário configurar `.env`, `APP_URL`, PostgreSQL, Prisma ou migrations. Arquivos `.env` locais antigos não são usados pela aplicação. A remodelação remove os arquivos de backend do código ativo; nenhum banco ou dado externo é apagado.
+A aplicação não exige configuração de banco de dados ou variáveis de ambiente. Se a porta 5173 estiver ocupada, encerre a outra instância ou escolha outra porta:
 
-## Usar o sorteador
-
-Escolha primeiro o **tipo de sorteio**. O **Sorteio aleatório** mantém a distribuição sem considerar habilidade. O **Sorteio equilibrado** revela a avaliação dos participantes após a lista de nomes.
-
-1. Escolha **2 times**, **3 times** ou **Preciso de mais times**. A última opção revela um campo obrigatório para informar 4 ou mais times.
-2. Digite uma pessoa por linha e identifique cada goleiro com `(GK)` no final do nome:
-
-```text
-João (GK)
-Pedro
-Leonardo
-Carlos (GK)
-Lucas
-Rafael
+```bash
+npm run dev -- --port 5174
 ```
 
-3. Clique em **Sortear times**.
-4. Use **Sortear novamente** para um novo sorteio com a mesma lista.
-5. Use **Enviar no WhatsApp** para copiar o texto. A página confirma a cópia; abra a conversa desejada e cole. O botão não envia mensagens nem abre conversas automaticamente.
+### Comandos disponíveis
 
-### Sorteio equilibrado e estrelas
+| Comando           | Finalidade                                                                                |
+| ----------------- | ----------------------------------------------------------------------------------------- |
+| `npm run dev`     | Iniciar o ambiente de desenvolvimento com atualização da interface durante as alterações. |
+| `npm run check`   | Verificar os tipos TypeScript.                                                            |
+| `npm test`        | Executar os testes das regras de sorteio e das interações da interface.                   |
+| `npm run build`   | Verificar os tipos e gerar os arquivos de produção em `dist/`.                            |
+| `npm run preview` | Conferir localmente o build de produção.                                                  |
 
-Avalie cada participante de **0 a 5 estrelas**, com incrementos de meia estrela. Clique na metade esquerda da estrela para selecionar metade e na direita para uma estrela inteira. Há uma opção explícita de **zero** e um botão para **Limpar** a avaliação. Os controles também são acessíveis por teclado como grupos de opções.
-
-**Sem avaliação não é zero.** O sorteio equilibrado exige uma avaliação válida de todos os jogadores que serão distribuídos. Avalie goleiros pela habilidade na função: quando um goleiro vai para cada time, suas estrelas entram no cálculo. Goleiros fixos não precisam ser avaliados e ficam fora do cálculo.
-
-As avaliações permanecem ao alternar o tipo de sorteio, a quantidade de times, o modo de goleiros e ao reordenar a lista. São associadas ao nome, ignorando maiúsculas e espaços extras. Adicionar ou corrigir o nome de outro participante preserva as demais avaliações. Um nome novo ou renomeado começa sem avaliação; remover um participante apaga a sua avaliação, mesmo se ele for adicionado novamente. Não há identificação de pessoas além dos nomes informados.
-
-O algoritmo tenta diferentes distribuições, organiza níveis altos e baixos e testa trocas entre jogadores da mesma posição para aproximar a **média de estrelas** dos times. Com quantidades iguais isso também equilibra os totais; quando os tamanhos diferem, as médias permitem comparar os times sem exigir somas iguais. Um jogador a mais ainda pode ser uma vantagem. Os tamanhos continuam diferindo em no máximo uma pessoa, e a regra dos goleiros é preservada.
-
-É uma heurística com tentativas e orçamento de comparações limitado, não uma garantia de solução matemática perfeita. O resultado depende das avaliações subjetivas. A ordem de jogadores empatados, goleiros e times com vagas extras varia aleatoriamente. **Sortear novamente** busca outra composição bem equilibrada, mas pode repetir uma formação por acaso ou quando há poucas alternativas boas.
-
-O resultado mostra a média por time e a diferença entre médias. **Nem as avaliações individuais nem as médias são incluídas no texto para WhatsApp.** Apenas os nomes, times e goleiros são copiados.
-
-### Goleiros fixos e times de linha
-
-Após escolher a quantidade de times, ative o botão **Goleiros fixos**. Nesse modo, somente jogadores de linha são sorteados. Você pode montar, por exemplo, **3 times de linha com 2 goleiros fixos**, revezando apenas os times de linha.
-
-Os nomes com `(GK)` ficam em uma lista separada e não contam no tamanho dos times. A quantidade de goleiros é livre e seus nomes são opcionais: também é possível informar somente os jogadores de linha. Quando informados, os goleiros aparecem em uma seção própria no resultado e no texto copiado para o WhatsApp. Não há distribuição ou revezamento automático de goleiros.
-
-É necessário pelo menos um jogador de linha por time. O novo sorteio mantém os goleiros fora dos times; desativar a opção restaura a exigência de exatamente um goleiro por time. Mudar o modo invalida o resultado anterior.
-
-Se o navegador negar acesso à área de transferência, o resultado aparece em um campo de texto com a opção **Selecionar texto** para cópia manual. A cópia automática funciona em HTTPS e em ambientes locais que permitam Clipboard API.
-
-## Regras
-
-- Linhas vazias e espaços no começo/fim são ignorados.
-- `(GK)` e `(gk)` no fim do nome identificam goleiros.
-- Um marcador sem nome é inválido.
-- Nomes repetidos, desconsiderando maiúsculas e espaços extras, são informados. Diferencie as pessoas, por exemplo, `João A` e `João B`; ninguém é removido silenciosamente.
-- No modo normal, a quantidade de goleiros deve ser **igual** à quantidade de times. Faltas e excessos impedem o sorteio e mostram o ajuste necessário.
-- No modo normal, cada pessoa aparece uma única vez, com um goleiro por time. No modo de goleiros fixos, apenas os jogadores de linha são distribuídos; goleiros informados aparecem separadamente.
-- A diferença de quantidade entre os times é de no máximo um jogador nos dois modos.
-- Os times que recebem jogadores excedentes também são escolhidos aleatoriamente.
-- Os dois modos equilibram a quantidade; somente o sorteio equilibrado considera as estrelas.
-- Uma nova tentativa pode produzir a mesma formação por acaso.
-- Editar nomes, avaliações, quantidade de times, tipo de sorteio ou modo de goleiros invalida o resultado anterior.
-
-Todos os dados ficam somente na memória da página. Recarregar ou fechar a aba apaga a lista e o resultado. A aplicação não envia os nomes ao servidor nem os persiste no navegador.
-
-## Estrutura
-
-| Caminho                            | Responsabilidade                                                      |
-| ---------------------------------- | --------------------------------------------------------------------- |
-| `src/App.tsx`                      | Estado da página e fluxo de sorteio                                   |
-| `src/components/DrawForm.tsx`      | Quantidade de times, lista e mensagens de validação                   |
-| `src/components/TeamResults.tsx`   | Times apresentados, novo sorteio e cópia com alternativa manual       |
-| `src/domain/draw.ts`               | Interpretação, validação e formatação do texto                        |
-| `src/domain/balance.ts`            | Distribuição por estrelas e melhoria por trocas com regras de posição |
-| `src/domain/random.ts`             | Embaralhamento e números aleatórios sem viés de módulo                |
-| `src/components/PlayerRatings.tsx` | Avaliação acessível por estrelas e meias estrelas                     |
-| `src/styles.css`                   | Interface responsiva                                                  |
-| `tests/`                           | Testes de domínio e interação com a interface                         |
-
-React + TypeScript + Vite. O sorteio usa Fisher–Yates com números gerados pela Web Crypto API e amostragem sem viés de módulo. As funções de domínio não dependem de React. Não há rotas de API, login ou chamadas ao banco na versão atual.
-
-## Comandos e validação
-
-| Comando           | Função                                                              |
-| ----------------- | ------------------------------------------------------------------- |
-| `npm run dev`     | Iniciar desenvolvimento                                             |
-| `npm run check`   | Verificar TypeScript                                                |
-| `npm test`        | Testar regras e interface, inclusive cópia e falha da Clipboard API |
-| `npm run build`   | Verificar tipos e gerar `dist/`                                     |
-| `npm run preview` | Conferir o build localmente                                         |
-
-O CI executa instalação limpa, build e testes sem serviço de PostgreSQL.
-
-## Publicar
+## Publicação
 
 ```bash
 npm ci
 npm run build
 ```
 
-Publique o conteúdo de **`dist/`** em uma hospedagem de arquivos estáticos com HTTPS. O build usa caminhos relativos para funcionar também em subdiretórios. `npm run preview` é destinado à conferência local, não a servir a aplicação em produção. Nenhuma hospedagem é criada automaticamente por este repositório.
+Publique o conteúdo de **`dist/`** em uma hospedagem de arquivos estáticos com HTTPS. Os caminhos relativos do build permitem hospedar a aplicação também em um subdiretório.
 
-## Versão anterior
+O Node.js é usado nas ferramentas de desenvolvimento, testes e build; a aplicação publicada executa no navegador, sem exigir um processo Node.js no servidor. O comando `npm run preview` serve para conferência local do build.
 
-A implementação MVC com Express, Prisma e PostgreSQL foi preservada na branch **`archive/mvc-v0.1`**, no commit `be4f1d226cf90eb2c5f30631809a7942f62d04fd`. A linha atual é a versão 0.2.0, focada exclusivamente no sorteador. Para futuras expansões, o histórico da versão anterior permanece disponível.
+## Organização do projeto
+
+A estrutura separa os componentes visuais das regras de sorteio. Isso permite testar o cálculo de distribuição sem depender da interface e evoluir as telas sem concentrar todas as regras em um componente.
+
+| Caminho                            | Responsabilidade                                                         |
+| ---------------------------------- | ------------------------------------------------------------------------ |
+| `src/App.tsx`                      | Estado da página e coordenação do fluxo de sorteio.                      |
+| `src/components/DrawForm.tsx`      | Escolha de modo, quantidade de times, goleiros e lista de participantes. |
+| `src/components/PlayerRatings.tsx` | Avaliações por estrelas e meias estrelas.                                |
+| `src/components/TeamResults.tsx`   | Apresentação dos times, médias, novo sorteio e cópia do resultado.       |
+| `src/domain/draw.ts`               | Interpretação dos nomes, validações, avaliações e formatação do texto.   |
+| `src/domain/balance.ts`            | Busca de distribuições equilibradas por estrelas.                        |
+| `src/domain/random.ts`             | Geração aleatória e embaralhamento.                                      |
+| `src/styles.css`                   | Aparência e adaptação da interface aos tamanhos de tela.                 |
+| `tests/`                           | Testes automatizados das regras e da interface.                          |
+| `.github/workflows/ci.yml`         | Instalação, build e testes no GitHub Actions.                            |
+
+## Tecnologias e motivos das escolhas
+
+As versões das bibliotecas abaixo são as **resolvidas no `package-lock.json`**, e não apenas as faixas permitidas pelo `package.json`. Use `npm ci` para instalar as versões registradas no projeto. A versão de referência do Node.js está no `.nvmrc` e no workflow de CI; npm não tem uma versão específica fixada.
+
+### Interface e ferramentas de desenvolvimento
+
+| Tecnologia               | Versão de referência                 | Papel na aplicação e motivo da escolha                                                                                                                                            |
+| ------------------------ | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **React**                | **19.3.1**                           | Organiza a interface em componentes e mantém formulário, avaliações e resultado sincronizados com o estado da página. Facilita a evolução das interações sem recarregar a página. |
+| **React DOM**            | **19.3.1**                           | Renderiza os componentes React no navegador e atualiza os elementos da interface.                                                                                                 |
+| **TypeScript**           | **5.9.3**                            | Define os tipos de participantes, times, avaliações e opções de sorteio. Ajuda a detectar inconsistências durante o desenvolvimento e facilita mudanças nas regras.               |
+| **Vite**                 | **7.3.7**                            | Fornece o servidor de desenvolvimento e o build de produção. Atende ao formato de uma aplicação React estática com configuração pequena.                                          |
+| **Plugin React do Vite** | **5.2.0**                            | Integra React ao Vite, incluindo a atualização dos componentes durante o desenvolvimento.                                                                                         |
+| **Node.js**              | **24**; mínimo declarado **22.12.0** | Executa as ferramentas de desenvolvimento, build e testes. A versão 24 mantém o ambiente recomendado alinhado ao CI.                                                              |
+| **npm**                  | Sem versão fixada                    | Gerencia dependências e scripts. O arquivo de lock permite reproduzir a instalação com `npm ci`.                                                                                  |
+| **HTML e CSS**           | Padrões nativos da web               | Estruturam a página e definem estilos responsivos, controles de estrelas e estados visuais, sem depender de um framework de componentes ou de estilos.                            |
+
+### Testes e integração contínua
+
+| Tecnologia                | Versão de referência                            | Papel e motivo da escolha                                                                                            |
+| ------------------------- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| **Node.js Test Runner**   | Integrado ao Node.js 24 usado no CI             | Executa a suíte de testes sem exigir um framework adicional de execução.                                             |
+| **tsx**                   | **4.23.15**                                     | Permite executar os arquivos de teste TypeScript e TSX diretamente com o test runner do Node.js.                     |
+| **React Testing Library** | **16.3.3**                                      | Verifica as interações pela perspectiva do usuário: selecionar opções, avaliar jogadores, sortear e copiar os times. |
+| **jsdom**                 | **27.4.0**                                      | Fornece um ambiente de documento HTML para testar os componentes sem abrir um navegador real.                        |
+| **GitHub Actions**        | `actions/checkout@v4` e `actions/setup-node@v4` | Automatiza instalação limpa, build e testes a cada push ou pull request, ajudando a identificar regressões.          |
+
+Os testes verificam, entre outros casos, jogadores sem repetição, tamanhos dos times, regras dos goleiros, avaliações válidas, distribuição por estrelas, preservação das avaliações e conteúdo copiado para o WhatsApp.
+
+### Recursos nativos do navegador
+
+| Recurso                                          | Uso e motivo da escolha                                                                                                         |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| **Web Crypto API**                               | Fornece os números aleatórios usados no embaralhamento Fisher–Yates. A amostragem evita favorecer índices por viés de módulo.   |
+| **Clipboard API**                                | Copia o resultado para o usuário colar no WhatsApp, com confirmação de sucesso e alternativa manual quando a cópia é bloqueada. |
+| **Controles HTML e atributos de acessibilidade** | Permitem identificar campos, navegar nas opções de avaliação por teclado e apresentar mensagens de validação e confirmação.     |
+
+Esses recursos fazem parte do navegador e não têm uma versão de pacote npm no projeto.
+
+### Por que uma aplicação estática?
+
+O escopo atual consiste em receber uma lista, calcular a divisão e apresentar os times. Essas operações podem acontecer inteiramente no navegador. Por isso, a arquitetura usa **frontend estático com regras de domínio separadas dos componentes**, sem backend ou banco de dados.
+
+Essa escolha simplifica a instalação, a hospedagem e a manutenção, além de manter os dados dos participantes na própria página. Recursos futuros que precisem de contas, histórico compartilhado ou persistência poderão exigir uma nova avaliação da arquitetura.
