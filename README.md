@@ -1,119 +1,91 @@
-# ⚽ Partida Certa JS
+# ⚽ Partida Certa — Sorteador de times
 
-Organização de futebol amador com **React + TypeScript**, **Node.js/Express + TypeScript** e **PostgreSQL + Prisma ORM**, em um **monólito MVC**.
+Uma página pública para dividir sua turma em times de futebol, com **exatamente um goleiro por time**, e copiar a escalação para o WhatsApp. Sem cadastro, backend ou banco de dados.
 
-Esta é a primeira versão funcional da reimplementação do [partida-certa](https://github.com/leonardopenz/partida-certa). O projeto original usa Laravel e Vue/Inertia; este repositório implementa o núcleo do domínio em JavaScript/TypeScript. Não é uma cópia completa de todos os módulos.
+## Executar
 
-## O que já funciona
-
-- Cadastro, login e logout com senha protegida por scrypt e sessões persistidas no banco.
-- Grupos com administrador e membros; convite por link para usuários autenticados.
-- Agenda de partidas de society, futsal e campo, com local, data, limites e valor por jogador.
-- Confirmação e cancelamento de presença de membros e convidados.
-- Link público de presença, compartilhável manualmente no WhatsApp ou outro canal.
-- Cancelamento até 30 minutos antes da partida; proibição de alterações após início/cancelamento.
-- Controle transacional de lotação com bloqueio por partida no PostgreSQL.
-- Sorteio aleatório de 2 a 8 times, equilibrado por quantidade e salvo no banco.
-- Invalidação do sorteio quando a lista de jogadores muda.
-- Interface responsiva em português, testes automatizados e workflow de CI.
-
-PostgreSQL é o **banco de dados**. Prisma é o **ORM** que acessa esse banco.
-
-## Executar localmente
-
-Requisitos: Node.js 24 (ou >=22.12), npm e PostgreSQL 17+. Docker é opcional.
+Requisitos: Node.js 24 (ou >=22.12) e npm.
 
 ```bash
 git clone https://github.com/leonardopenz/partida-certa-js.git
 cd partida-certa-js
-cp .env.example .env
 npm ci
-
-# Opcional: subir somente o banco com Docker
-docker compose up -d db
-
-npm run generate
-npm run db:deploy
 npm run dev
 ```
 
-Abra **http://localhost:5173** e crie sua conta. Não há usuários ou senhas de aplicação pré-cadastrados. Se usar PostgreSQL instalado diretamente, crie o usuário/banco e ajuste `DATABASE_URL` no `.env` antes de aplicar as migrations.
+Abra **http://127.0.0.1:5173**. O Vite usa uma porta fixa: se 5173 já estiver ocupada, encerre a outra instância ou informe outra porta com `npm run dev -- --port 5174`.
 
-As credenciais do `compose.yaml` são apenas para desenvolvimento local. O banco é exposto somente em `127.0.0.1`. Para trocar a senha local no primeiro provisionamento, configure `POSTGRES_PASSWORD` e atualize `DATABASE_URL`.
+Não é necessário configurar `.env`, `APP_URL`, PostgreSQL, Prisma ou migrations. Arquivos `.env` locais antigos não são usados pela aplicação. A remodelação remove os arquivos de backend do código ativo; nenhum banco ou dado externo é apagado.
 
-### Fluxo de uso
+## Usar o sorteador
 
-1. Crie uma conta e um grupo.
-2. Copie o convite do grupo para que outros usuários se tornem membros.
-3. Agende uma partida dentro do grupo.
-4. Confirme presença ou compartilhe o link público para convidados avulsos.
-5. Com pelo menos um jogador por time, sorteie os times na página da partida.
+1. Escolha **2 times**, **3 times** ou **Preciso de mais times**. A última opção revela um campo obrigatório para informar 4 ou mais times.
+2. Digite uma pessoa por linha e identifique cada goleiro com `(GK)` no final do nome:
 
-Quem recebe o link público vê o nome dos confirmados e os dados básicos da partida. Para convidados, o acesso de cancelamento é guardado no navegador que confirmou a presença; ele não é divulgado na lista pública. Se limpar os dados do navegador, esse acesso será perdido. A primeira versão não impede uma pessoa de se cadastrar várias vezes como convidado com nomes diferentes.
-
-## Arquitetura MVC
-
-Um repositório, um banco e **um único processo/deploy em produção**. O Express serve `/api` e o React compilado. No desenvolvimento, Vite oferece hot reload e encaminha `/api` ao Express.
-
-| Camada              | Diretório                                        | Responsabilidade                                          |
-| ------------------- | ------------------------------------------------ | --------------------------------------------------------- |
-| Model               | `prisma/`, `src/server/models/`                  | Entidades, relações, migrations, consultas e persistência |
-| View                | `src/client/`                                    | React, formulários e interação com usuário                |
-| Controller          | `src/server/controllers/`                        | Validação de entrada, autorização e respostas HTTP        |
-| Services            | `src/server/services/`                           | Regras de presença, transações, sorteio e segurança       |
-| Middleware / Routes | `src/server/middleware/`, `src/server/routes.ts` | Sessão, roteamento e proteção de acesso                   |
-
-A API JSON é uma interface interna do mesmo monólito; não há microsserviços. As transações de confirmação, cancelamento e sorteio usam o mesmo bloqueio de partida (`SELECT ... FOR UPDATE`) para evitar lotação excedida e sorteios inconsistentes. Valores monetários são armazenados em centavos; datas são transportadas com fuso e exibidas no horário local do navegador.
-
-## Comandos
-
-| Comando                             | Uso                                        |
-| ----------------------------------- | ------------------------------------------ |
-| `npm run dev`                       | Express + React/Vite em desenvolvimento    |
-| `npm run check`                     | Gerar Prisma Client e verificar TypeScript |
-| `npm run build`                     | Compilar frontend e backend                |
-| `npm start`                         | Iniciar o backend compilado                |
-| `npm test`                          | Testar regras e hashes de senha sem banco  |
-| `npm run test:integration`          | Testar a API com PostgreSQL dedicado       |
-| `npm run db:deploy`                 | Aplicar migrations existentes              |
-| `npm run db:migrate -- --name nome` | Criar migration durante desenvolvimento    |
-| `npm run db:studio`                 | Explorar dados localmente                  |
-
-Prisma Client é gerado em `src/server/generated/` e não é versionado. Execute `npm run generate` após instalar dependências e antes de iniciar o desenvolvimento. `npm run build` também faz a geração automaticamente.
-
-### Testes de integração
-
-Crie um banco separado chamado `partida_certa_test`; nunca use o banco com dados reais. Os testes exigem um nome terminado em `_test`, criam seus próprios registros e removem apenas esses registros ao finalizar.
-
-```bash
-export TEST_DATABASE_URL='postgresql://partida:partida_local@localhost:5432/partida_certa_test'
-DATABASE_URL="$TEST_DATABASE_URL" npm run db:deploy
-npm run test:integration
+```text
+João (GK)
+Pedro
+Leonardo
+Carlos (GK)
+Lucas
+Rafael
 ```
 
-O workflow em `.github/workflows/ci.yml` sobe PostgreSQL, aplica migrations e executa build e testes.
+3. Clique em **Sortear times**.
+4. Use **Sortear novamente** para um novo sorteio com a mesma lista.
+5. Use **Enviar no WhatsApp** para copiar o texto. A página confirma a cópia; abra a conversa desejada e cole. O botão não envia mensagens nem abre conversas automaticamente.
 
-## Produção
+Se o navegador negar acesso à área de transferência, o resultado aparece em um campo de texto com a opção **Selecionar texto** para cópia manual. A cópia automática funciona em HTTPS e em ambientes locais que permitam Clipboard API.
+
+## Regras
+
+- Linhas vazias e espaços no começo/fim são ignorados.
+- `(GK)` e `(gk)` no fim do nome identificam goleiros.
+- Um marcador sem nome é inválido.
+- Nomes repetidos, desconsiderando maiúsculas e espaços extras, são informados. Diferencie as pessoas, por exemplo, `João A` e `João B`; ninguém é removido silenciosamente.
+- A quantidade de goleiros deve ser **igual** à quantidade de times. Faltas e excessos impedem o sorteio e mostram o ajuste necessário.
+- Cada pessoa aparece uma única vez, com um goleiro por time e diferença máxima de um jogador entre os times.
+- Os times que recebem jogadores excedentes também são escolhidos aleatoriamente.
+- A distribuição é equilibrada por quantidade, sem avaliação de habilidade.
+- Uma nova tentativa pode produzir a mesma formação por acaso.
+- Editar os nomes ou a quantidade de times invalida o resultado anterior.
+
+Todos os dados ficam somente na memória da página. Recarregar ou fechar a aba apaga a lista e o resultado. A aplicação não envia os nomes ao servidor nem os persiste no navegador.
+
+## Estrutura
+
+| Caminho                          | Responsabilidade                                                |
+| -------------------------------- | --------------------------------------------------------------- |
+| `src/App.tsx`                    | Estado da página e fluxo de sorteio                             |
+| `src/components/DrawForm.tsx`    | Quantidade de times, lista e mensagens de validação             |
+| `src/components/TeamResults.tsx` | Times apresentados, novo sorteio e cópia com alternativa manual |
+| `src/domain/draw.ts`             | Interpretação, validação, embaralhamento e formatação do texto  |
+| `src/styles.css`                 | Interface responsiva                                            |
+| `tests/`                         | Testes de domínio e interação com a interface                   |
+
+React + TypeScript + Vite. O sorteio usa Fisher–Yates com números gerados pela Web Crypto API e amostragem sem viés de módulo. As funções de domínio não dependem de React. Não há rotas de API, login ou chamadas ao banco na versão atual.
+
+## Comandos e validação
+
+| Comando           | Função                                                              |
+| ----------------- | ------------------------------------------------------------------- |
+| `npm run dev`     | Iniciar desenvolvimento                                             |
+| `npm run check`   | Verificar TypeScript                                                |
+| `npm test`        | Testar regras e interface, inclusive cópia e falha da Clipboard API |
+| `npm run build`   | Verificar tipos e gerar `dist/`                                     |
+| `npm run preview` | Conferir o build localmente                                         |
+
+O CI executa instalação limpa, build e testes sem serviço de PostgreSQL.
+
+## Publicar
 
 ```bash
 npm ci
 npm run build
-npm run db:deploy
-NODE_ENV=production APP_URL=https://seu-dominio.example npm start
 ```
 
-Configure `DATABASE_URL`, `APP_URL` e `PORT` no ambiente. Use proxy reverso com HTTPS na frente do Express. Em produção, o frontend compilado e a API são servidos na mesma origem. `APP_URL` deve corresponder exatamente à origem externa: mutações exigem esse cabeçalho `Origin` e `Content-Type: application/json`. Scripts que consumirem a API também precisam enviar esses cabeçalhos e a sessão.
+Publique o conteúdo de **`dist/`** em uma hospedagem de arquivos estáticos com HTTPS. O build usa caminhos relativos para funcionar também em subdiretórios. `npm run preview` é destinado à conferência local, não a servir a aplicação em produção. Nenhuma hospedagem é criada automaticamente por este repositório.
 
-As sessões usam cookies HttpOnly, SameSite=Strict e Secure em produção; os tokens são armazenados somente como hash no banco. Há validação Zod, limitação de tentativas de autenticação/inscrição de convidados, Helmet e verificação de vínculo com grupo em cada operação protegida. Somente administradores agendam/cancelam partidas, compartilham convites e salvam sorteios. Não há configuração automática de `trust proxy`; ajuste-a para a topologia real antes de depender de limites por IP atrás de proxy. Sessões expiradas são recusadas imediatamente e removidas ao abrir novas sessões.
+## Versão anterior
 
-## Próximos módulos do original
-
-- Caixa do grupo, despesas, mensalistas e marcação de pagamentos.
-- Planos, assinaturas e integração Stripe.
-- Relatórios e administração do sistema.
-- Edição/exclusão de grupos e partidas e gerenciamento de papéis dos membros.
-- Recuperação de senha, verificação de e-mail e edição de perfil.
-- Partidas recorrentes, notificações, filas e uploads.
-- Rotação/expiração dos convites e recuperação do acesso de cancelamento de convidados.
-
-Nenhuma dessas integrações é simulada como se estivesse funcionando. Esta versão não importa dados do banco Laravel e não contém credenciais do projeto original.
+A implementação MVC com Express, Prisma e PostgreSQL foi preservada na branch **`archive/mvc-v0.1`**, no commit `be4f1d226cf90eb2c5f30631809a7942f62d04fd`. A linha atual é a versão 0.2.0, focada exclusivamente no sorteador. Para futuras expansões, o histórico da versão anterior permanece disponível.

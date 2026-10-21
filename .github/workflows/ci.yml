@@ -7,20 +7,6 @@ permissions:
 jobs:
   validate:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:17-alpine
-        env:
-          POSTGRES_USER: partida
-          POSTGRES_PASSWORD: partida_test
-          POSTGRES_DB: partida_certa_test
-        ports: ["5432:5432"]
-        options: >-
-          --health-cmd "pg_isready -U partida -d partida_certa_test"
-          --health-interval 5s --health-timeout 5s --health-retries 10
-    env:
-      DATABASE_URL: postgresql://partida:partida_test@localhost:5432/partida_certa_test
-      TEST_DATABASE_URL: postgresql://partida:partida_test@localhost:5432/partida_certa_test
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,6 +15,4 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - run: npm run db:deploy
       - run: npm test
-      - run: npm run test:integration
