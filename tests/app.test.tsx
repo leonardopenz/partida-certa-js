@@ -119,3 +119,55 @@ test("cópia confirmada somente após sucesso; falha oferece seleção manual", 
   ) as HTMLTextAreaElement;
   assert.equal(manual.selectionEnd, manual.value.length);
 });
+
+test("goleiros fixos: 3 times de linha, cópia separada, novo sorteio e retorno ao modo normal", async () => {
+  let copied = "";
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: {
+      writeText: async (text: string) => {
+        copied = text;
+      },
+    },
+  });
+  render(<App />);
+  fireEvent.click(screen.getByLabelText("3 times"));
+  const toggle = screen.getByRole("button", { name: /Goleiros fixos/ });
+  assert.equal(toggle.getAttribute("aria-pressed"), "false");
+  fireEvent.click(toggle);
+  assert.equal(toggle.getAttribute("aria-pressed"), "true");
+  fill(`${names}\nRafael\nBruno\nMarcos`);
+  draw();
+  const cards = screen.getAllByRole("article");
+  assert.equal(cards.length, 3);
+  assert.ok(cards.every((card) => !card.textContent?.includes("GK")));
+  assert.ok(
+    screen.getByRole("region", { name: "Goleiros fixos fora do sorteio" }),
+  );
+  fireEvent.click(screen.getByRole("button", { name: "Enviar no WhatsApp" }));
+  await waitFor(() => assert.match(copied, /GOLEIROS FIXOS/));
+  assert.equal(copied.match(/João \(GK\)/g)?.length, 1);
+  fireEvent.click(screen.getByRole("button", { name: /Sortear novamente/ }));
+  assert.equal(screen.getAllByRole("article").length, 3);
+  assert.ok(screen.getByText("João (GK)"));
+  fireEvent.click(toggle);
+  assert.equal(
+    screen.queryByRole("heading", { name: "Os times estão prontos." }),
+    null,
+  );
+  draw();
+  assert.match(
+    screen.getByRole("alert").textContent ?? "",
+    /Marque mais 1 jogador/,
+  );
+});
+
+test("modo fixo também permite informar somente a lista dos jogadores de linha", () => {
+  render(<App />);
+  fireEvent.click(screen.getByLabelText("3 times"));
+  fireEvent.click(screen.getByRole("button", { name: /Goleiros fixos/ }));
+  fill("A\nB\nC\nD\nE\nF");
+  draw();
+  assert.equal(screen.getAllByRole("article").length, 3);
+  assert.equal(screen.queryByRole("alert"), null);
+});

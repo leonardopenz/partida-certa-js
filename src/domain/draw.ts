@@ -41,12 +41,24 @@ export function parsePlayers(text: string): ParsedPlayers {
   return { players, errors };
 }
 
-export function validateDraw(parsed: ParsedPlayers, count: number): string[] {
+export function validateDraw(
+  parsed: ParsedPlayers,
+  count: number,
+  fixedGoalkeepers = false,
+): string[] {
   const errors = [...parsed.errors];
   if (!Number.isSafeInteger(count) || count < 2)
     return [...errors, "Informe uma quantidade inteira de pelo menos 2 times."];
   if (!parsed.players.length)
     return [...errors, "Digite os nomes dos jogadores, um por linha."];
+  if (fixedGoalkeepers) {
+    const outfieldCount = parsed.players.filter((p) => !p.goalkeeper).length;
+    if (outfieldCount < count)
+      errors.push(
+        `Para montar ${count} times de linha, informe pelo menos ${count} jogadores de linha. Os goleiros fixos não entram nessa conta.`,
+      );
+    return errors;
+  }
   if (count > parsed.players.length)
     errors.push(
       "A quantidade de times não pode ser maior que a quantidade de jogadores.",
@@ -88,9 +100,10 @@ function shuffle<T>(values: readonly T[], pick: (max: number) => number): T[] {
 export function drawTeams(
   parsed: ParsedPlayers,
   count: number,
-  pick = randomIndex,
+  options: { fixedGoalkeepers?: boolean; pick?: (max: number) => number } = {},
 ): Team[] {
-  const errors = validateDraw(parsed, count);
+  const { fixedGoalkeepers = false, pick = randomIndex } = options;
+  const errors = validateDraw(parsed, count, fixedGoalkeepers);
   if (errors.length) throw new Error(errors.join("\n"));
   const keepers = shuffle(
     parsed.players.filter((p) => p.goalkeeper),
@@ -100,9 +113,9 @@ export function drawTeams(
     parsed.players.filter((p) => !p.goalkeeper),
     pick,
   );
-  const teams: Team[] = keepers.map((keeper, i) => ({
+  const teams: Team[] = Array.from({ length: count }, (_, i) => ({
     name: `Time ${i + 1}`,
-    players: [keeper],
+    players: fixedGoalkeepers ? [] : [keepers[i]],
   }));
   const order = shuffle(
     teams.map((_, i) => i),
@@ -112,9 +125,25 @@ export function drawTeams(
   return teams;
 }
 
-export function formatTeams(teams: readonly Team[]): string {
+export function formatTeams(
+  teams: readonly Team[],
+  fixedGoalkeepers?: readonly Player[],
+): string {
   return [
     "⚽ PARTIDA CERTA — TIMES SORTEADOS",
+    ...(fixedGoalkeepers
+      ? [
+          "🔄 Times de linha — goleiros fixos fora do sorteio",
+          ...(fixedGoalkeepers.length
+            ? [
+                [
+                  "*GOLEIROS FIXOS*",
+                  ...fixedGoalkeepers.map((player) => `🧤 ${player.name} (GK)`),
+                ].join("\n"),
+              ]
+            : []),
+        ]
+      : []),
     ...teams.map((team) =>
       [
         `*${team.name.toLocaleUpperCase("pt-BR")}*`,

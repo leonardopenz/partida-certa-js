@@ -7,6 +7,8 @@ interface Props {
   names: string;
   parsed: ParsedPlayers;
   errors: string[];
+  fixedGoalkeepers: boolean;
+  onFixedGoalkeepers: (value: boolean) => void;
   onChoice: (value: string) => void;
   onCount: (value: string) => void;
   onNames: (value: string) => void;
@@ -65,6 +67,25 @@ export function DrawForm(props: Props) {
           />
         </label>
       )}
+      <div className="fixed-mode">
+        <button
+          type="button"
+          className={`fixed-toggle ${props.fixedGoalkeepers ? "enabled" : ""}`}
+          aria-pressed={props.fixedGoalkeepers}
+          aria-describedby={`${id}-fixed-help`}
+          onClick={() => props.onFixedGoalkeepers(!props.fixedGoalkeepers)}
+        >
+          <span aria-hidden="true">🧤</span> Goleiros fixos{" "}
+          <span className="toggle-state">
+            {props.fixedGoalkeepers ? "Ativado" : "Desativado"}
+          </span>
+        </button>
+        <p id={`${id}-fixed-help`} className="field-help">
+          {props.fixedGoalkeepers
+            ? "Sorteie apenas os jogadores de linha. Os goleiros ficam fora dos times e não precisam ser informados. Se quiser listá-los, use (GK)."
+            : "Ative para manter os goleiros fora do sorteio e montar apenas times de linha."}
+        </p>
+      </div>
       <label className="field" htmlFor={`${id}-players`}>
         Quem vai jogar?
       </label>
@@ -84,13 +105,22 @@ export function DrawForm(props: Props) {
       />
       <div id={`${id}-counts`} className="player-counts" aria-live="polite">
         <span>
-          <strong>{props.parsed.players.length}</strong> jogadores
+          <strong>
+            {props.fixedGoalkeepers
+              ? props.parsed.players.length - goalkeepers
+              : props.parsed.players.length}
+          </strong>{" "}
+          {props.fixedGoalkeepers ? "jogadores de linha" : "jogadores"}
         </span>
         <span>
           <strong>{goalkeepers}</strong>{" "}
           {goalkeepers === 1 ? "goleiro" : "goleiros"}
         </span>
-        <span>1 goleiro por time</span>
+        <span>
+          {props.fixedGoalkeepers
+            ? "Goleiros fora do sorteio"
+            : "1 goleiro por time"}
+        </span>
       </div>
       {!!props.errors.length && (
         <div className="validation" role="alert">

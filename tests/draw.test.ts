@@ -75,14 +75,16 @@ test("todos os jogadores aparecem uma vez, com 1 GK e diferença máxima de 1 po
 
 test("embaralha também quais times recebem jogadores excedentes", () => {
   const parsed = parsePlayers("A (GK)\nB (GK)\nC (GK)\nD");
-  const teams = drawTeams(parsed, 3, () => 0);
+  const teams = drawTeams(parsed, 3, { pick: () => 0 });
   assert.deepEqual(
     teams.map((t) => t.players.length),
     [1, 2, 1],
   );
   assert.deepEqual(
     formatTeams(
-      drawTeams(parsePlayers("João (GK)\nCarlos (GK)"), 2, (max) => max - 1),
+      drawTeams(parsePlayers("João (GK)\nCarlos (GK)"), 2, {
+        pick: (max) => max - 1,
+      }),
     ),
     "⚽ PARTIDA CERTA — TIMES SORTEADOS\n\n*TIME 1*\n🧤 João (GK)\n\n*TIME 2*\n🧤 Carlos (GK)",
   );
@@ -93,4 +95,52 @@ test("gerador retorna somente índices válidos", () => {
     const value = randomIndex(7);
     assert.ok(Number.isInteger(value) && value >= 0 && value < 7);
   }
+});
+
+test("goleiros fixos permitem 3 times de linha com 2 goleiros separados", () => {
+  const parsed = parsePlayers(
+    [
+      "João (GK)",
+      "Carlos (GK)",
+      ...Array.from({ length: 17 }, (_, i) => `Linha ${i}`),
+    ].join("\n"),
+  );
+  assert.deepEqual(validateDraw(parsed, 3, true), []);
+  assert.ok(validateDraw(parsed, 3).length > 0);
+  const teams = drawTeams(parsed, 3, { fixedGoalkeepers: true });
+  assert.equal(teams.length, 3);
+  assert.deepEqual(teams.map((team) => team.players.length).sort(), [5, 6, 6]);
+  assert.ok(
+    teams.every((team) => team.players.every((player) => !player.goalkeeper)),
+  );
+  assert.deepEqual(
+    teams.flatMap((team) => team.players.map((player) => player.id)).sort(),
+    parsed.players
+      .filter((player) => !player.goalkeeper)
+      .map((player) => player.id)
+      .sort(),
+  );
+  const text = formatTeams(
+    teams,
+    parsed.players.filter((player) => player.goalkeeper),
+  );
+  assert.match(text, /GOLEIROS FIXOS/);
+  assert.equal(text.match(/João \(GK\)/g)?.length, 1);
+  assert.equal(text.match(/Carlos \(GK\)/g)?.length, 1);
+  assert.equal(text.split("*TIME 1*")[1].includes("(GK)"), false);
+});
+
+test("modo fixo dispensa nomes de goleiros, mas não forma time de linha vazio", () => {
+  const parsed = parsePlayers("A\nB\nC");
+  assert.deepEqual(validateDraw(parsed, 3, true), []);
+  const teams = drawTeams(parsed, 3, { fixedGoalkeepers: true });
+  assert.ok(teams.every((team) => team.players.length === 1));
+  assert.match(formatTeams(teams, []), /goleiros fixos fora do sorteio/);
+  assert.match(
+    validateDraw(parsePlayers("A\nB\nG1 (GK)\nG2 (GK)"), 3, true).join(),
+    /pelo menos 3 jogadores de linha/,
+  );
+  assert.throws(() =>
+    drawTeams(parsePlayers("G1 (GK)\nG2 (GK)"), 2, { fixedGoalkeepers: true }),
+  );
 });

@@ -1,6 +1,6 @@
 # ⚽ Partida Certa — Sorteador de times
 
-Uma página pública para dividir sua turma em times de futebol, com **exatamente um goleiro por time**, e copiar a escalação para o WhatsApp. Sem cadastro, backend ou banco de dados.
+Uma página pública para dividir sua turma em times de futebol, com **um goleiro por time ou goleiros fixos fora do sorteio**, e copiar a escalação para o WhatsApp. Sem cadastro, backend ou banco de dados.
 
 ## Executar
 
@@ -35,6 +35,14 @@ Rafael
 4. Use **Sortear novamente** para um novo sorteio com a mesma lista.
 5. Use **Enviar no WhatsApp** para copiar o texto. A página confirma a cópia; abra a conversa desejada e cole. O botão não envia mensagens nem abre conversas automaticamente.
 
+### Goleiros fixos e times de linha
+
+Após escolher a quantidade de times, ative o botão **Goleiros fixos**. Nesse modo, somente jogadores de linha são sorteados. Você pode montar, por exemplo, **3 times de linha com 2 goleiros fixos**, revezando apenas os times de linha.
+
+Os nomes com `(GK)` ficam em uma lista separada e não contam no tamanho dos times. A quantidade de goleiros é livre e seus nomes são opcionais: também é possível informar somente os jogadores de linha. Quando informados, os goleiros aparecem em uma seção própria no resultado e no texto copiado para o WhatsApp. Não há distribuição ou revezamento automático de goleiros.
+
+É necessário pelo menos um jogador de linha por time. O novo sorteio mantém os goleiros fora dos times; desativar a opção restaura a exigência de exatamente um goleiro por time. Mudar o modo invalida o resultado anterior.
+
 Se o navegador negar acesso à área de transferência, o resultado aparece em um campo de texto com a opção **Selecionar texto** para cópia manual. A cópia automática funciona em HTTPS e em ambientes locais que permitam Clipboard API.
 
 ## Regras
@@ -43,12 +51,13 @@ Se o navegador negar acesso à área de transferência, o resultado aparece em u
 - `(GK)` e `(gk)` no fim do nome identificam goleiros.
 - Um marcador sem nome é inválido.
 - Nomes repetidos, desconsiderando maiúsculas e espaços extras, são informados. Diferencie as pessoas, por exemplo, `João A` e `João B`; ninguém é removido silenciosamente.
-- A quantidade de goleiros deve ser **igual** à quantidade de times. Faltas e excessos impedem o sorteio e mostram o ajuste necessário.
-- Cada pessoa aparece uma única vez, com um goleiro por time e diferença máxima de um jogador entre os times.
+- No modo normal, a quantidade de goleiros deve ser **igual** à quantidade de times. Faltas e excessos impedem o sorteio e mostram o ajuste necessário.
+- No modo normal, cada pessoa aparece uma única vez, com um goleiro por time. No modo de goleiros fixos, apenas os jogadores de linha são distribuídos; goleiros informados aparecem separadamente.
+- A diferença de quantidade entre os times é de no máximo um jogador nos dois modos.
 - Os times que recebem jogadores excedentes também são escolhidos aleatoriamente.
 - A distribuição é equilibrada por quantidade, sem avaliação de habilidade.
 - Uma nova tentativa pode produzir a mesma formação por acaso.
-- Editar os nomes ou a quantidade de times invalida o resultado anterior.
+- Editar os nomes, a quantidade de times ou o modo de goleiros invalida o resultado anterior.
 
 Todos os dados ficam somente na memória da página. Recarregar ou fechar a aba apaga a lista e o resultado. A aplicação não envia os nomes ao servidor nem os persiste no navegador.
 
