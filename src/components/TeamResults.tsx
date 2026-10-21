@@ -1,18 +1,20 @@
 import { useRef, useState } from "react";
-import { formatTeams, type Team } from "../domain/draw";
+import { formatTeams, type Team, type Player } from "../domain/draw";
 
 export function TeamResults({
   teams,
   onRedraw,
+  fixedGoalkeepers,
 }: {
   teams: Team[];
   onRedraw: () => void;
+  fixedGoalkeepers?: Player[];
 }) {
   const [copied, setCopied] = useState(false);
   const [manual, setManual] = useState(false);
   const [copying, setCopying] = useState(false);
   const textRef = useRef<HTMLTextAreaElement>(null);
-  const text = formatTeams(teams);
+  const text = formatTeams(teams, fixedGoalkeepers);
   async function copy() {
     setCopying(true);
     setCopied(false);
@@ -38,9 +40,28 @@ export function TeamResults({
         <span className="result-pill">
           {teams.length} times ·{" "}
           {teams.reduce((total, team) => total + team.players.length, 0)}{" "}
-          jogadores
+          {fixedGoalkeepers ? "jogadores de linha" : "jogadores"}
         </span>
       </div>
+      {fixedGoalkeepers && (
+        <section
+          className="fixed-keepers"
+          aria-label="Goleiros fixos fora do sorteio"
+        >
+          <h3>🧤 Goleiros fixos</h3>
+          <p>
+            Os goleiros ficam fora dos times. Apenas os jogadores de linha
+            revezam.
+          </p>
+          {!!fixedGoalkeepers.length && (
+            <ul>
+              {fixedGoalkeepers.map((player) => (
+                <li key={player.id}>{player.name} (GK)</li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
       <div className="teams-grid">
         {teams.map((team, index) => (
           <article className="team-card" key={team.name}>
@@ -53,7 +74,10 @@ export function TeamResults({
               </span>
               <div>
                 <h3>{team.name}</h3>
-                <p>{team.players.length} jogadores</p>
+                <p>
+                  {team.players.length}{" "}
+                  {fixedGoalkeepers ? "jogadores de linha" : "jogadores"}
+                </p>
               </div>
             </div>
             <ul>

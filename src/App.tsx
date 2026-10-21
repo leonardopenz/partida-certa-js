@@ -12,6 +12,7 @@ export default function App() {
   const [choice, setChoice] = useState("2");
   const [customCount, setCustomCount] = useState("4");
   const [names, setNames] = useState("");
+  const [fixedGoalkeepers, setFixedGoalkeepers] = useState(false);
   const [errors, setErrors] = useState<string[]>([]);
   const [teams, setTeams] = useState<Team[] | null>(null);
   const [drawId, setDrawId] = useState(0);
@@ -23,7 +24,7 @@ export default function App() {
     setErrors([]);
   }
   function draw() {
-    const issues = validateDraw(parsed, count);
+    const issues = validateDraw(parsed, count, fixedGoalkeepers);
     if (choice === "more" && (!Number.isSafeInteger(count) || count < 4))
       issues.unshift(
         "Na opção de mais times, informe uma quantidade inteira de pelo menos 4.",
@@ -33,7 +34,7 @@ export default function App() {
       setTeams(null);
       return;
     }
-    setTeams(drawTeams(parsed, count));
+    setTeams(drawTeams(parsed, count, { fixedGoalkeepers }));
     setDrawId((id) => id + 1);
     requestAnimationFrame(() =>
       resultsRef.current?.scrollIntoView?.({
@@ -68,8 +69,8 @@ export default function App() {
             Os times, <em>a gente sorteia.</em>
           </h1>
           <p>
-            Um goleiro de cada lado, jogadores bem distribuídos e mais tempo com
-            a bola rolando.
+            Goleiros do seu jeito, jogadores bem distribuídos e mais tempo com a
+            bola rolando.
           </p>
           <div className="intro-tags">
             <span>Sem cadastro</span>
@@ -84,6 +85,11 @@ export default function App() {
             names={names}
             parsed={parsed}
             errors={errors}
+            fixedGoalkeepers={fixedGoalkeepers}
+            onFixedGoalkeepers={(value) => {
+              invalidate();
+              setFixedGoalkeepers(value);
+            }}
             onChoice={(value) => {
               invalidate();
               setChoice(value);
@@ -138,14 +144,26 @@ export default function App() {
               <p>
                 <strong>Goleiro tem lugar certo.</strong>
                 <br />
-                Cada time recebe exatamente um. Os demais jogadores são
-                distribuídos aleatoriamente.
+                {fixedGoalkeepers
+                  ? "Goleiros fixos ficam fora do sorteio. Só os jogadores de linha são divididos entre os times."
+                  : "Cada time recebe exatamente um. Os demais jogadores são distribuídos aleatoriamente."}
               </p>
             </div>
           </aside>
         </div>
         <div ref={resultsRef} className="results-anchor">
-          {teams && <TeamResults key={drawId} teams={teams} onRedraw={draw} />}
+          {teams && (
+            <TeamResults
+              key={drawId}
+              teams={teams}
+              onRedraw={draw}
+              fixedGoalkeepers={
+                fixedGoalkeepers
+                  ? parsed.players.filter((player) => player.goalkeeper)
+                  : undefined
+              }
+            />
+          )}
         </div>
       </main>
       <footer>
